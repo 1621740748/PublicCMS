@@ -108,7 +108,7 @@ public class CommonConstants extends Constants{
      * @return session user key
      */
     public static final String getSessionUser() {
-        return "PUBLICCMS_USER";
+        return "user";
     }
 
     /**
@@ -122,7 +122,7 @@ public class CommonConstants extends Constants{
      * @return session admin key
      */
     public static final String getSessionAdmin() {
-        return "PUBLICCMS_ADMIN";
+        return "admin";
     }
 
     /**
@@ -143,7 +143,7 @@ public class CommonConstants extends Constants{
      * @return cookies user key split
      */
     public static final String getCookiesUserSplit() {
-        return "##";
+        return "_";
     }
 
     /**

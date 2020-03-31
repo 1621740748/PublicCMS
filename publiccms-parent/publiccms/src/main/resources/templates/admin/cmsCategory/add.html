@@ -1,17 +1,19 @@
 <@_category id=id!copyId>
-    <#assign a=object/>
-    <#assign parentId=object.parentId!/>
-    <#assign typeId=object.typeId!/>
-    <#assign attribute=getCategoryAttribute(a.id)!/>
+    <#assign
+        a=object
+        parentId=object.parentId!''
+        typeId=object.typeId!''
+        attribute=getCategoryAttribute(a.id)!{}
+    />
 </@_category>
 <@_category id=parentId><#assign category=object/></@_category>
 <@_categoryType id=typeId><#assign categoryType=object/></@_categoryType>
 <script>
 function clickAddTagType(){
-    $('.tagTypes .button',navTab.getCurrentPanel()).click();
+    $('#tagTypes',navTab.getCurrentPanel()).parent().find('.button').click();
 }
 </script>
-<form method="post" action="cmsCategory/save.do?callbackType=closeCurrent&navTabId=cmsCategory/list" class="pageForm required-validate" onsubmit="clickAddTagType();return validateCallback(this, navTabAjaxDone);">
+<form method="post" autocomplete="off" action="cmsCategory/save.do?callbackType=closeCurrent&navTabId=cmsCategory/list" class="pageForm required-validate" onsubmit="clickAddTagType();return validateCallback(this, navTabAjaxDone);">
     <input name="id" type="hidden" value="${id!}" />
     <input type="hidden" name="_csrf" value="<@_csrfToken admin=true/>"/>
     <div class="formBar">
@@ -43,7 +45,7 @@ function clickAddTagType(){
                     <dd>
                         <input name="parentId" type="hidden" value="${parentId!}" />
                         <input name="categoryName" readonly="readonly" type="text" size="10" value="${(category.name)!}"/>
-                        <a class="btnLook" href="cmsCategory/lookup.html?categoryId=${parentId!}" lookupGroup=""></a>
+                        <a class="btnLook" href="cmsCategory/lookup.html?currentCategoryId=${(a.id)!}" lookupGroup=""></a>
                     </dd>
                 </dl>
                 <dl>
@@ -66,14 +68,14 @@ function clickAddTagType(){
                 <dl class="nowrap">
                     <dt><@t.page 'code'/>:</dt>
                     <dd>
-                        <input class="required" name="code" type="text" maxlength="50" size="20" value="<#if id?has_content>${(a.code)!}</#if>"/>
+                        <input class="required" name="code" remote="cmsCategory/virify.do<#if id?has_content>?oldCode=${(a.code)!}</#if>" data-msg-remote="<@t.message 'verify.hasExist.code'/>" type="text" maxlength="50" size="20" value="<#if id?has_content>${(a.code)!}</#if>"/>
                     </dd>
                 </dl>
 <#include "../include_page/tagTypes.html"/>
 <@tagTypes ((a.tagTypeIds)!'')/>
 <#if site.useStatic>
                 <dl class="nowrap onlyUrl advanced">
-                    <dt><@t.page 'template_path'/>:</dt>
+                    <dt><@t.page 'category.template_path'/>:</dt>
                     <dd>
                         <input name="templatePath" type="text" maxlength="255" size="30" value="${(a.templatePath)!}"/>
                         <a class="btnLook" href="cmsTemplate/lookup.html?field=templatePath" lookupGroup=""><@t.page 'template.select'/></a>
@@ -96,7 +98,7 @@ function clickAddTagType(){
                         <label><input name="containChild" type="checkbox"${(a?has_content&&a.containChild)?then(' checked="checked"','')?no_esc}/><@t.page 'category.contain_child'/></label>
                     </dd>
                 </dl>
-                <dl class="advanced">
+                <dl>
                     <dt><@t.page 'sort'/>:</dt>
                     <dd><input class="required digits" name="sort" type="number" size="4" value="${(a.sort)!0}"/></dd>
                 </dl>
@@ -156,13 +158,15 @@ function clickAddTagType(){
         <#assign modelIndex++/>
                 <dl class="nowrap">
                     <dt>
-                        <input name="categoryModelList[${modelIndex}].use" type="checkbox" onclick="checkCategoryModel();"/>
-                        <input name="categoryModelList[${modelIndex}].categoryModel.id.modelId" type="hidden" value="${a.id}"/>
-                        ${a.id}:${a.name!}
+                        <label>
+                            <input name="categoryModelList[${modelIndex}].use" type="checkbox" onclick="checkCategoryModel();"/>
+                            <input name="categoryModelList[${modelIndex}].categoryModel.id.modelId" type="hidden" value="${a.id}"/>
+                            ${a.id}:${a.name!}
+                        </label>
                     </dt>
                     <dd <#if a.onlyUrl> style="display:none"</#if>>
         <#if site.useStatic>
-                        <label><@t.page 'category.template_path'/>:</label>
+                        <label><@t.page 'category.content_template_path'/>:</label>
                         <input name="categoryModelList[${modelIndex}].categoryModel.templatePath" data-model="${a.id}" type="text" maxlength="200" size="30" value="${(a.templatePath)!}"/>
                         <a class="btnLook" href="cmsTemplate/lookup.html?field=categoryModelList${('['+modelIndex+']')?url}.categoryModel.templatePath" lookupGroup=""><@t.page 'template.select'/></a>
         </#if>
@@ -218,7 +222,7 @@ function checkCategoryModel(){
 }
 <#if a?has_content>
     <@_categoryModelList categoryId=id!copyId>
-        <#list page.list as a>
+        <#list list as a>
             $('input[name$=\\.categoryModel\\.id\\.modelId][value=${a.id.modelId}]',navTab.getCurrentPanel()).parent().find('input[type=checkbox]').click();
             $('input[data-model=${a.id.modelId}]',navTab.getCurrentPanel()).val('${(a.templatePath)!}');
         </#list>
@@ -234,6 +238,7 @@ checkCategoryModel();
         </script>
             </div>
             <div class="pageFormContent categoryModelContent" layoutH="96">
+<#assign contentExtendList=[]/>
 <#if a?has_content&&a.extendId?has_content>
     <@_sysExtendFieldList extendId=a.extendId>
         <#assign contentExtendList=list>
@@ -242,7 +247,7 @@ checkCategoryModel();
 <#include "../include_page/extends.html"/>
                 <fieldset>
                     <legend><@t.page 'content.extend_field'/>(<@t.page 'extend_field.invalid'/>:source,sourceUrl,text)(<@t.page 'metadata.default_value_description'/>)</legend>
-                    <@extends 'contentExtends' contentExtendList![]/>
+                    <@extends 'contentExtends' contentExtendList true/>
                 </fieldset>
             </div>
         </div>

@@ -170,7 +170,7 @@ public class VerificationUtils {
     public static byte[] publicKeyDecode(byte[] publicKey, byte[] input) {
         try {
             Cipher cipher = Cipher.getInstance("RSA");
-            cipher.init(Cipher.ENCRYPT_MODE, getPublicKey(publicKey));
+            cipher.init(Cipher.DECRYPT_MODE, getPublicKey(publicKey));
             return cipher.doFinal(input);
         } catch (Exception e) {
             return input;
@@ -187,7 +187,7 @@ public class VerificationUtils {
     public static byte[] privateKeyDecode(byte[] privateKey, byte[] input) {
         try {
             Cipher cipher = Cipher.getInstance("RSA");
-            cipher.init(Cipher.DECRYPT_MODE, getPrivateKey(privateKey));
+            cipher.init(Cipher.ENCRYPT_MODE, getPrivateKey(privateKey));
             return cipher.doFinal(input);
         } catch (Exception e) {
             return input;
@@ -267,8 +267,18 @@ public class VerificationUtils {
      * @param input
      * @return sha2 encode result
      */
-    public static String sha2Encode(String input) {
+    public static String sha512Encode(String input) {
         return encode(input, "SHA-512");
+    }
+    
+    /**
+     * sha256加密
+     *
+     * @param input
+     * @return sha2 encode result
+     */
+    public static String sha256Encode(String input) {
+        return encode(input, "SHA-256");
     }
 
     /**

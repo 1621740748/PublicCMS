@@ -30,7 +30,7 @@ import com.publiccms.common.servlet.InstallServlet;
  *
  */
 public class InitializationInitializer implements WebApplicationInitializer {
-    protected final Log log = LogFactory.getLog(getClass());
+    protected static final Log log = LogFactory.getLog(InitializationInitializer.class);
     /**
      * 安装Servlet映射路径
      */
@@ -45,29 +45,51 @@ public class InitializationInitializer implements WebApplicationInitializer {
         try {
             Properties config = PropertiesLoaderUtils.loadAllProperties(CommonConstants.CMS_CONFIG_FILE);
             initProxy(config);
-            CommonConstants.CMS_FILEPATH = System.getProperty("cms.filePath", config.getProperty("cms.filePath"));
-            String absolutePath = new File(CommonConstants.CMS_FILEPATH).getAbsolutePath();
-            File file = new File(absolutePath + CommonConstants.INSTALL_LOCK_FILENAME);
+            if (null == CommonConstants.CMS_FILEPATH) {
+                initFilePath(config.getProperty("cms.filePath"), System.getProperty("user.dir"));
+            }
+            File file = new File(CommonConstants.CMS_FILEPATH + CommonConstants.INSTALL_LOCK_FILENAME);
             if (file.exists()) {
-                String version = FileUtils.readFileToString(file, CommonConstants.DEFAULT_CHARSET);
+                String version = FileUtils.readFileToString(file, CommonConstants.DEFAULT_CHARSET_NAME);
                 if (CmsVersion.getVersion().equals(version)) {
                     CmsVersion.setInitialized(true);
-                    CmsDataSource.initDefautlDataSource();
-                    log.info("PublicCMS " + CmsVersion.getVersion() + " will start normally in " + absolutePath);
+                    CmsDataSource.initDefaultDataSource();
+                    log.info("PublicCMS " + CmsVersion.getVersion() + " will start normally in " + CommonConstants.CMS_FILEPATH);
                 } else {
                     createInstallServlet(servletcontext, config, InstallServlet.STEP_CHECKDATABASE, version);
-                    log.warn("PublicCMS " + CmsVersion.getVersion() + " installer will start in " + absolutePath
+                    log.warn("PublicCMS " + CmsVersion.getVersion() + " installer will start in " + CommonConstants.CMS_FILEPATH
                             + ", please upgrade your database!");
                 }
             } else {
                 createInstallServlet(servletcontext, config, null, null);
-                log.warn("PublicCMS " + CmsVersion.getVersion() + " installer will start in " + absolutePath
+                log.warn("PublicCMS " + CmsVersion.getVersion() + " installer will start in " + CommonConstants.CMS_FILEPATH
                         + ", please configure your database information and initialize the database!");
             }
         } catch (IOException e) {
             throw new ServletException(e);
         }
         servletcontext.addListener(IntrospectorCleanupListener.class);
+    }
+
+    /**
+     * 检查CMS路径变量
+     * 
+     * @param filePath
+     * @param defaultPath
+     * 
+     */
+    public static void initFilePath(String filePath, String defaultPath) {
+        File file = new File(System.getProperty("cms.filePath", filePath));
+        try {
+            file.mkdirs();
+        } catch (Exception e) {
+        }
+        if (!file.exists()) {
+            log.warn("PublicCMS " + CmsVersion.getVersion()
+                    + " the cms.filePath parameter is invalid , try to use the temporary directory.");
+            file = new File(defaultPath, "data/publiccms");
+        }
+        CommonConstants.CMS_FILEPATH = file.getAbsolutePath();
     }
 
     private static void createInstallServlet(ServletContext servletcontext, Properties config, String startStep, String version) {

@@ -23,6 +23,7 @@ public class SysUserTokenDao extends BaseDao<SysUserToken> {
      * @param siteId
      * @param userId
      * @param channel
+     * @param orderField 
      * @param orderType
      * @param pageIndex
      * @param pageSize
@@ -48,10 +49,10 @@ public class SysUserTokenDao extends BaseDao<SysUserToken> {
         }
         switch (orderField) {
         case "expiryDate":
-            queryHandler.order("bean.expiryDate " + orderType);
+            queryHandler.order("bean.expiryDate ").append(orderType);
             break;
         default:
-            queryHandler.order("bean.createDate " + orderType);
+            queryHandler.order("bean.createDate ").append(orderType);
         }
         return getPage(queryHandler, pageIndex, pageSize);
     }
@@ -77,7 +78,7 @@ public class SysUserTokenDao extends BaseDao<SysUserToken> {
     public int delete(Long userId) {
         if (CommonUtils.notEmpty(userId)) {
             QueryHandler queryHandler = getQueryHandler("delete from SysUserToken bean");
-            queryHandler.condition("bean.userId <= :userId").setParameter("userId", userId);
+            queryHandler.condition("bean.userId = :userId").setParameter("userId", userId);
             return delete(queryHandler);
         }
         return 0;

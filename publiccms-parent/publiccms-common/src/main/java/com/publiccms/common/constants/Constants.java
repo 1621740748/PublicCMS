@@ -1,6 +1,7 @@
 package com.publiccms.common.constants;
 
 import java.nio.charset.Charset;
+import java.security.SecureRandom;
 import java.util.Random;
 import java.util.function.BinaryOperator;
 
@@ -29,7 +30,7 @@ public class Constants {
      * 
      * Random
      */
-    public static final Random random = new Random();
+    public static final Random random = new SecureRandom();
     /**
      * 默认字符编码名称
      * 
@@ -78,6 +79,12 @@ public class Constants {
      * comma delimited
      */
     public static final String COMMA_DELIMITED = ",";
+    /**
+     * 逗号分隔符
+     * 
+     * comma delimited
+     */
+    public static final char COMMA = ',';
 
     /**
      * @return deafult meger function

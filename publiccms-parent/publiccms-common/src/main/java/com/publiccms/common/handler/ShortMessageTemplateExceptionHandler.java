@@ -1,6 +1,5 @@
 package com.publiccms.common.handler;
 
-
 import java.io.IOException;
 import java.io.Writer;
 
@@ -23,12 +22,7 @@ public class ShortMessageTemplateExceptionHandler implements TemplateExceptionHa
     public void handleTemplateException(TemplateException templateexception, Environment environment, Writer writer)
             throws TemplateException {
         try {
-            String code = templateexception.getFTLInstructionStack();
-            if (null != code && code.indexOf("Failed at: ") > 0 && code.indexOf("  [") > 0) {
-                writer.write("error:" + code.substring(code.indexOf("Failed at: ") + 11, code.indexOf("  [")));
-            } else {
-                writer.write("[some errors occurred!]");
-            }
+            writer.write(templateexception.getMessageWithoutStackTop());
         } catch (IOException e) {
             log.error(environment.getCurrentTemplate().getSourceName(), e);
         }

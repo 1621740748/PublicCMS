@@ -1,5 +1,6 @@
 package com.publiccms.logic.component.config;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -17,8 +18,8 @@ import com.publiccms.common.cache.CacheEntity;
 import com.publiccms.common.cache.CacheEntityFactory;
 import com.publiccms.common.constants.CommonConstants;
 import com.publiccms.common.tools.CommonUtils;
+import com.publiccms.entities.sys.SysExtendField;
 import com.publiccms.entities.sys.SysSite;
-import com.publiccms.views.pojo.entities.ExtendField;
 
 /**
  *
@@ -75,7 +76,7 @@ public class CorsConfigComponent implements SiteCache, Config {
                             .asList(StringUtils.split(configData.get(CONFIG_ALLOWED_METHODS), CommonConstants.COMMA_DELIMITED)));
                 }
                 if (CommonUtils.notEmpty(configData.get(CONFIG_ALLOWED_HEADERS))) {
-                    config.setExposedHeaders(Arrays
+                    config.setAllowedHeaders(Arrays
                             .asList(StringUtils.split(configData.get(CONFIG_ALLOWED_HEADERS), CommonConstants.COMMA_DELIMITED)));
                 }
                 if (CommonUtils.notEmpty(configData.get(CONFIG_EXPOSED_HEADERS))) {
@@ -102,10 +103,14 @@ public class CorsConfigComponent implements SiteCache, Config {
      * @throws IllegalAccessException
      * @throws InstantiationException
      * @throws ClassNotFoundException
+     * @throws SecurityException 
+     * @throws NoSuchMethodException 
+     * @throws InvocationTargetException 
+     * @throws IllegalArgumentException 
      */
     @Autowired
     public void initCache(CacheEntityFactory cacheEntityFactory)
-            throws ClassNotFoundException, InstantiationException, IllegalAccessException {
+            throws ClassNotFoundException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
         cache = cacheEntityFactory.createCacheEntity("cors", CacheEntityFactory.MEMORY_CACHE_ENTITY);
     }
 
@@ -119,7 +124,6 @@ public class CorsConfigComponent implements SiteCache, Config {
     }
 
     /**
-     * @param site
      * @param locale
      * @return
      */
@@ -128,39 +132,36 @@ public class CorsConfigComponent implements SiteCache, Config {
     }
 
     @Override
-    public List<ExtendField> getExtendFieldList(SysSite site, Locale locale) {
-        List<ExtendField> extendFieldList = new ArrayList<>();
-        extendFieldList.add(new ExtendField(CONFIG_ALLOWED_ORIGINS, INPUTTYPE_TEXT, false,
+    public List<SysExtendField> getExtendFieldList(SysSite site, Locale locale) {
+        List<SysExtendField> extendFieldList = new ArrayList<>();
+        extendFieldList.add(new SysExtendField(CONFIG_ALLOWED_ORIGINS, INPUTTYPE_TEXT, false,
                 getMessage(locale, CONFIG_CODE_DESCRIPTION + CommonConstants.DOT + CONFIG_ALLOWED_ORIGINS),
                 getMessage(locale,
                         CONFIG_CODE_DESCRIPTION + CommonConstants.DOT + CONFIG_ALLOWED_ORIGINS + CONFIG_CODE_DESCRIPTION_SUFFIX),
                 "*"));
-        extendFieldList.add(new ExtendField(CONFIG_ALLOWED_METHODS, INPUTTYPE_TEXT, false,
+        extendFieldList.add(new SysExtendField(CONFIG_ALLOWED_METHODS, INPUTTYPE_TEXT,
                 getMessage(locale, CONFIG_CODE_DESCRIPTION + CommonConstants.DOT + CONFIG_ALLOWED_METHODS),
-                getMessage(locale,
-                        CONFIG_CODE_DESCRIPTION + CommonConstants.DOT + CONFIG_ALLOWED_METHODS + CONFIG_CODE_DESCRIPTION_SUFFIX),
-                null));
-        extendFieldList.add(new ExtendField(CONFIG_ALLOWED_HEADERS, INPUTTYPE_TEXT, false,
+                getMessage(locale, CONFIG_CODE_DESCRIPTION + CommonConstants.DOT + CONFIG_ALLOWED_METHODS
+                        + CONFIG_CODE_DESCRIPTION_SUFFIX)));
+        extendFieldList.add(new SysExtendField(CONFIG_ALLOWED_HEADERS, INPUTTYPE_TEXT,
                 getMessage(locale, CONFIG_CODE_DESCRIPTION + CommonConstants.DOT + CONFIG_ALLOWED_HEADERS),
-                getMessage(locale,
-                        CONFIG_CODE_DESCRIPTION + CommonConstants.DOT + CONFIG_ALLOWED_HEADERS + CONFIG_CODE_DESCRIPTION_SUFFIX),
-                null));
-        extendFieldList.add(new ExtendField(CONFIG_EXPOSED_HEADERS, INPUTTYPE_TEXT, false,
+                getMessage(locale, CONFIG_CODE_DESCRIPTION + CommonConstants.DOT + CONFIG_ALLOWED_HEADERS
+                        + CONFIG_CODE_DESCRIPTION_SUFFIX)));
+        extendFieldList.add(new SysExtendField(CONFIG_EXPOSED_HEADERS, INPUTTYPE_TEXT,
                 getMessage(locale, CONFIG_CODE_DESCRIPTION + CommonConstants.DOT + CONFIG_EXPOSED_HEADERS),
-                getMessage(locale,
-                        CONFIG_CODE_DESCRIPTION + CommonConstants.DOT + CONFIG_EXPOSED_HEADERS + CONFIG_CODE_DESCRIPTION_SUFFIX),
-                null));
-        extendFieldList.add(new ExtendField(CONFIG_ALLOW_CREDENTIALS, INPUTTYPE_BOOLEAN, false,
+                getMessage(locale, CONFIG_CODE_DESCRIPTION + CommonConstants.DOT + CONFIG_EXPOSED_HEADERS
+                        + CONFIG_CODE_DESCRIPTION_SUFFIX)));
+        extendFieldList.add(new SysExtendField(CONFIG_ALLOW_CREDENTIALS, INPUTTYPE_BOOLEAN, false,
                 getMessage(locale, CONFIG_CODE_DESCRIPTION + CommonConstants.DOT + CONFIG_ALLOW_CREDENTIALS),
                 getMessage(locale, CONFIG_CODE_DESCRIPTION + CommonConstants.DOT + CONFIG_ALLOW_CREDENTIALS
                         + CONFIG_CODE_DESCRIPTION_SUFFIX),
-                null));
+                "true"));
         extendFieldList
-                .add(new ExtendField(CONFIG_MAXAGE, INPUTTYPE_TEXT, false,
+                .add(new SysExtendField(CONFIG_MAXAGE, INPUTTYPE_TEXT, false,
                         getMessage(locale, CONFIG_CODE_DESCRIPTION + CommonConstants.DOT + CONFIG_MAXAGE),
                         getMessage(locale,
                                 CONFIG_CODE_DESCRIPTION + CommonConstants.DOT + CONFIG_MAXAGE + CONFIG_CODE_DESCRIPTION_SUFFIX),
-                        "true"));
+                        "1800"));
         return extendFieldList;
     }
 

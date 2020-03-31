@@ -6,6 +6,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.publiccms.entities.sys.SysExtendField;
 
 /**
  *
@@ -27,7 +28,8 @@ public class CmsPageMetadata implements java.io.Serializable {
     private String acceptParameters;
     private Integer cacheTime;
     private String contentType;
-    private List<ExtendField> extendList;
+    private List<SysExtendField> extendList;
+    private Map<String, ParameterType> parameterTypeMap;
 
     /**
      * 
@@ -92,14 +94,8 @@ public class CmsPageMetadata implements java.io.Serializable {
     }
 
     /**
-     * @return the acceptParamters
-     */
-    public String getAcceptParamters() {
-        return acceptParameters;
-    }
-
-    /**
-     * @param acceptParameters the acceptParameters to set
+     * @param acceptParameters
+     *            the acceptParameters to set
      */
     public void setAcceptParamters(String acceptParameters) {
         this.acceptParameters = acceptParameters;
@@ -127,7 +123,8 @@ public class CmsPageMetadata implements java.io.Serializable {
     }
 
     /**
-     * @param contentType the contentType to set
+     * @param contentType
+     *            the contentType to set
      */
     public void setContentType(String contentType) {
         this.contentType = contentType;
@@ -164,15 +161,30 @@ public class CmsPageMetadata implements java.io.Serializable {
     /**
      * @return
      */
-    public List<ExtendField> getExtendList() {
+    public List<SysExtendField> getExtendList() {
         return extendList;
     }
 
     /**
      * @param extendList
      */
-    public void setExtendList(List<ExtendField> extendList) {
+    public void setExtendList(List<SysExtendField> extendList) {
         this.extendList = extendList;
+    }
+
+    /**
+     * @return the parameterTypeMap
+     */
+    public Map<String, ParameterType> getParameterTypeMap() {
+        return parameterTypeMap;
+    }
+
+    /**
+     * @param parameterTypeMap
+     *            the parameterTypeMap to set
+     */
+    public void setParameterTypeMap(Map<String, ParameterType> parameterTypeMap) {
+        this.parameterTypeMap = parameterTypeMap;
     }
 
     @JsonIgnore
@@ -188,6 +200,7 @@ public class CmsPageMetadata implements java.io.Serializable {
         map.put("contentType", getContentType());
         map.put("extendList", getExtendList());
         map.put("extendData", data.getExtendData());
+        map.put("parameterTypeMap", getParameterTypeMap());
         return map;
     }
 }

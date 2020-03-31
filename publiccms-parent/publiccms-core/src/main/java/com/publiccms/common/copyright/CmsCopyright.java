@@ -37,7 +37,7 @@ public class CmsCopyright implements Copyright {
             File licenseFile = new File(licenseFilePath);
             if (null == license || lastModify != licenseFile.lastModified()) {
                 try {
-                    String licenseText = FileUtils.readFileToString(licenseFile, CommonConstants.DEFAULT_CHARSET);
+                    String licenseText = FileUtils.readFileToString(licenseFile, CommonConstants.DEFAULT_CHARSET_NAME);
                     license = LicenseUtils.readLicense(licenseText);
                     lastModify = licenseFile.lastModified();
                 } catch (IOException e) {
@@ -49,7 +49,7 @@ public class CmsCopyright implements Copyright {
 
     private static boolean verifyDomain(String domain, String licenseDomain) {
         if ("*".equals(licenseDomain) || IpUtils.isIp(domain) || domain.toLowerCase().startsWith("dev.")
-                || -1 < domain.toLowerCase().indexOf(".dev.") || "localhost".equals(domain)) {
+                || domain.toLowerCase().contains(".dev.") || "localhost".equals(domain)) {
             return true;
         } else {
             String[] licenseDomains = StringUtils.split(licenseDomain, CommonConstants.COMMA_DELIMITED);

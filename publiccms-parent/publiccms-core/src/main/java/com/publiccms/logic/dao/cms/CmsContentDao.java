@@ -1,15 +1,12 @@
 package com.publiccms.logic.dao.cms;
 
 import java.io.Serializable;
-import java.util.Arrays;
 
 // Generated 2015-5-8 16:50:23 by com.publiccms.common.source.SourceGenerator
 
 import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -18,6 +15,7 @@ import org.hibernate.search.jpa.FullTextQuery;
 import org.hibernate.search.query.dsl.BooleanJunction;
 import org.hibernate.search.query.dsl.MustJunction;
 import org.hibernate.search.query.dsl.QueryBuilder;
+import org.hibernate.search.query.dsl.TermContext;
 import org.hibernate.transform.Transformers;
 import org.springframework.stereotype.Repository;
 
@@ -39,37 +37,105 @@ import com.publiccms.views.pojo.query.CmsContentQuery;
 public class CmsContentDao extends BaseDao<CmsContent> {
     private static final String[] textFields = new String[] { "title", "author", "editor", "description" };
     private static final String[] tagFields = new String[] { "tagIds" };
+    private static final String dictionaryField = "dictionaryValues";
     private static final String[] facetFields = new String[] { "categoryId", "modelId" };
     private static final String[] projectionFields = new String[] { "title", "categoryId", "modelId", "parentId", "author",
             "editor", "onlyUrl", "hasImages", "hasFiles", "url", "description", "tagIds", "publishDate" };
 
     /**
      * @param projection
+     * @param fuzzy
      * @param siteId
      * @param text
      * @param tagIds
+     * @param dictionaryValues
      * @param categoryIds
      * @param modelIds
+     * @param fields
      * @param startPublishDate
      * @param endPublishDate
+     * @param expiryDate
      * @param orderField
      * @param pageIndex
      * @param pageSize
      * @return results page
      */
-    public PageHandler query(boolean projection, Short siteId, String text, String tagIds, Integer[] categoryIds,
-            String[] modelIds, Date startPublishDate, Date endPublishDate, String orderField, Integer pageIndex,
-            Integer pageSize) {
+    public PageHandler query(boolean projection, boolean fuzzy, Short siteId, Integer[] categoryIds, String[] modelIds,
+            String text, String[] fields, String tagIds, String[] dictionaryValues, Date startPublishDate, Date endPublishDate,
+            Date expiryDate, String orderField, Integer pageIndex, Integer pageSize) {
         QueryBuilder queryBuilder = getFullTextQueryBuilder();
-        MustJunction termination = queryBuilder.bool()
-                .must(queryBuilder.keyword().onFields(CommonUtils.empty(tagIds) ? textFields : tagFields)
-                        .matching(CommonUtils.empty(tagIds) ? text : tagIds).createQuery())
-                .must(new TermQuery(new Term("siteId", siteId.toString())));
+        FullTextQuery query = getQuery(queryBuilder, projection, fuzzy, siteId, categoryIds, modelIds, text, fields, tagIds,
+                dictionaryValues, startPublishDate, endPublishDate, expiryDate, orderField);
+        return getPage(query, pageIndex, pageSize);
+    }
+
+    /**
+     * @param projection
+     * @param fuzzy
+     * @param siteId
+     * @param categoryIds
+     * @param modelIds
+     * @param text
+     * @param fields
+     * @param tagIds
+     * @param dictionaryValues
+     * @param startPublishDate
+     * @param endPublishDate
+     * @param expiryDate
+     * @param orderField
+     * @param pageIndex
+     * @param pageSize
+     * @return results page
+     */
+    public FacetPageHandler facetQuery(boolean projection, boolean fuzzy, Short siteId, Integer[] categoryIds, String[] modelIds,
+            String text, String[] fields, String tagIds, String[] dictionaryValues, Date startPublishDate, Date endPublishDate,
+            Date expiryDate, String orderField, Integer pageIndex, Integer pageSize) {
+        QueryBuilder queryBuilder = getFullTextQueryBuilder();
+        FullTextQuery query = getQuery(queryBuilder, projection, fuzzy, siteId, categoryIds, modelIds, text, fields, tagIds,
+                dictionaryValues, startPublishDate, endPublishDate, expiryDate, orderField);
+        return getFacetPage(queryBuilder, query, facetFields, 10, pageIndex, pageSize);
+    }
+
+    private FullTextQuery getQuery(QueryBuilder queryBuilder, boolean projection, boolean fuzzy, Short siteId,
+            Integer[] categoryIds, String[] modelIds, String text, String[] fields, String tagIds, String[] dictionaryValues,
+            Date startPublishDate, Date endPublishDate, Date expiryDate, String orderField) {
+        MustJunction termination = queryBuilder.bool().must(new TermQuery(new Term("siteId", siteId.toString())));
+        if (CommonUtils.notEmpty(text)) {
+            TermContext term = queryBuilder.keyword();
+            if (!fuzzy) {
+                term.fuzzy().withEditDistanceUpTo(1);
+            }
+            if (CommonUtils.notEmpty(fields)) {
+                for (String field : fields) {
+                    if (!ArrayUtils.contains(textFields, field)) {
+                        fields = textFields;
+                    }
+                }
+            } else {
+                fields = textFields;
+            }
+            termination.must(term.onFields(textFields).matching(text).createQuery());
+        }
+        if (CommonUtils.notEmpty(tagIds)) {
+            TermContext term = queryBuilder.keyword();
+            if (!fuzzy) {
+                term.fuzzy().withEditDistanceUpTo(1);
+            }
+            termination.must(term.onFields(tagFields).matching(tagIds).createQuery());
+        }
+        if (CommonUtils.notEmpty(dictionaryValues)) {
+            for (String value : dictionaryValues) {
+                termination.must(queryBuilder.phrase().onField(dictionaryField).sentence(value).createQuery());
+            }
+        }
         if (null != startPublishDate) {
             termination.must(queryBuilder.range().onField("publishDate").above(startPublishDate).createQuery());
         }
         if (null != endPublishDate) {
             termination.must(queryBuilder.range().onField("publishDate").below(endPublishDate).createQuery());
+        }
+        if (null != expiryDate) {
+            termination.must(queryBuilder.range().onField("expiryDate").from(1L).to(expiryDate.getTime()).createQuery()).not();
         }
         if (CommonUtils.notEmpty(categoryIds)) {
             @SuppressWarnings("rawtypes")
@@ -96,48 +162,7 @@ public class CmsContentDao extends BaseDao<CmsContent> {
             query.setProjection(projectionFields);
             query.setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
         }
-        return getPage(query, pageIndex, pageSize);
-    }
-
-    /**
-     * @param siteId
-     * @param categoryIds
-     * @param modelIds
-     * @param text
-     * @param tagId
-     * @param startPublishDate
-     * @param endPublishDate
-     * @param orderField
-     * @param pageIndex
-     * @param pageSize
-     * @return results page
-     */
-    public FacetPageHandler facetQuery(Short siteId, String[] categoryIds, String[] modelIds, String text, String tagId,
-            Date startPublishDate, Date endPublishDate, String orderField, Integer pageIndex, Integer pageSize) {
-        QueryBuilder queryBuilder = getFullTextQueryBuilder();
-        MustJunction termination = queryBuilder.bool()
-                .must(queryBuilder.keyword().onFields(CommonUtils.empty(tagId) ? textFields : tagFields)
-                        .matching(CommonUtils.empty(tagId) ? text : tagId).createQuery())
-                .must(new TermQuery(new Term("siteId", siteId.toString())));
-        if (null != startPublishDate) {
-            termination.must(queryBuilder.range().onField("publishDate").above(startPublishDate).createQuery());
-        }
-        if (null != endPublishDate) {
-            termination.must(queryBuilder.range().onField("publishDate").below(endPublishDate).createQuery());
-        }
-        Map<String, List<String>> valueMap = new LinkedHashMap<>();
-        if (CommonUtils.notEmpty(categoryIds)) {
-            valueMap.put("categoryId", Arrays.asList(categoryIds));
-        }
-        if (CommonUtils.notEmpty(modelIds)) {
-            valueMap.put("modelId", Arrays.asList(modelIds));
-        }
-        FullTextQuery query = getFullTextQuery(termination.createQuery());
-        if ("publishDate".equals(orderField)) {
-            Sort sort = new Sort(new SortField("publishDate", SortField.Type.LONG, true));
-            query.setSort(sort);
-        }
-        return getFacetPage(queryBuilder, query, facetFields, valueMap, 10, pageIndex, pageSize);
+        return query;
     }
 
     /**
@@ -185,22 +210,35 @@ public class CmsContentDao extends BaseDao<CmsContent> {
         if (CommonUtils.notEmpty(queryEntitry.getStatus())) {
             queryHandler.condition("bean.status in (:status)").setParameter("status", queryEntitry.getStatus());
         }
-        if (CommonUtils.notEmpty(queryEntitry.getCategoryIds())) {
-            queryHandler.condition("bean.categoryId in (:categoryIds)").setParameter("categoryIds",
-                    queryEntitry.getCategoryIds());
-        } else if (CommonUtils.notEmpty(queryEntitry.getCategoryId())) {
-            queryHandler.condition("bean.categoryId = :categoryId").setParameter("categoryId", queryEntitry.getCategoryId());
+        if (CommonUtils.notEmpty(queryEntitry.getParentId())) {
+            queryHandler.condition("bean.parentId = :parentId").setParameter("parentId", queryEntitry.getParentId());
+        } else {
+            if (CommonUtils.notEmpty(queryEntitry.getCategoryIds())) {
+                queryHandler.condition("bean.categoryId in (:categoryIds)").setParameter("categoryIds",
+                        queryEntitry.getCategoryIds());
+            } else if (CommonUtils.notEmpty(queryEntitry.getCategoryId())) {
+                queryHandler.condition("bean.categoryId = :categoryId").setParameter("categoryId", queryEntitry.getCategoryId());
+            }
+            if (null != queryEntitry.getEmptyParent() && queryEntitry.getEmptyParent()) {
+                queryHandler.condition("bean.parentId is null");
+            }
         }
         if (null != queryEntitry.getDisabled()) {
             queryHandler.condition("bean.disabled = :disabled").setParameter("disabled", queryEntitry.getDisabled());
         }
+        if (CommonUtils.notEmpty(queryEntitry.getQuoteId())) {
+            queryHandler.condition("bean.quoteContentId = :quoteContentId").setParameter("quoteContentId",
+                    queryEntitry.getQuoteId());
+        } else {
+            if (null != queryEntitry.getEmptyQuote() && queryEntitry.getEmptyQuote()) {
+                queryHandler.condition("bean.quoteContentId is null");
+            }
+        }
         if (CommonUtils.notEmpty(queryEntitry.getModelIds())) {
             queryHandler.condition("bean.modelId in (:modelIds)").setParameter("modelIds", queryEntitry.getModelIds());
         }
-        if (CommonUtils.notEmpty(queryEntitry.getParentId())) {
-            queryHandler.condition("bean.parentId = :parentId").setParameter("parentId", queryEntitry.getParentId());
-        } else if (null != queryEntitry.getEmptyParent() && queryEntitry.getEmptyParent()) {
-            queryHandler.condition("bean.parentId is null");
+        if (CommonUtils.notEmpty(queryEntitry.getUserId())) {
+            queryHandler.condition("bean.userId = :userId").setParameter("userId", queryEntitry.getUserId());
         }
         if (null != queryEntitry.getOnlyUrl()) {
             queryHandler.condition("bean.onlyUrl = :onlyUrl").setParameter("onlyUrl", queryEntitry.getOnlyUrl());
@@ -221,9 +259,6 @@ public class CmsContentDao extends BaseDao<CmsContent> {
         if (CommonUtils.notEmpty(queryEntitry.getTitle())) {
             queryHandler.condition("(bean.title like :title)").setParameter("title", like(queryEntitry.getTitle()));
         }
-        if (CommonUtils.notEmpty(queryEntitry.getUserId())) {
-            queryHandler.condition("bean.userId = :userId").setParameter("userId", queryEntitry.getUserId());
-        }
         if (null != queryEntitry.getStartPublishDate()) {
             queryHandler.condition("bean.publishDate > :startPublishDate").setParameter("startPublishDate",
                     queryEntitry.getStartPublishDate());
@@ -231,6 +266,10 @@ public class CmsContentDao extends BaseDao<CmsContent> {
         if (null != queryEntitry.getEndPublishDate()) {
             queryHandler.condition("bean.publishDate <= :endPublishDate").setParameter("endPublishDate",
                     queryEntitry.getEndPublishDate());
+        }
+        if (null != queryEntitry.getExpiryDate()) {
+            queryHandler.condition("(bean.expiryDate is null or bean.expiryDate >= :expiryDate)").setParameter("expiryDate",
+                    queryEntitry.getExpiryDate());
         }
         if (!ORDERTYPE_ASC.equalsIgnoreCase(orderType)) {
             orderType = ORDERTYPE_DESC;
@@ -240,30 +279,28 @@ public class CmsContentDao extends BaseDao<CmsContent> {
         }
         switch (orderField) {
         case "scores":
-            queryHandler.order("bean.scores " + orderType);
+            queryHandler.order("bean.scores ").append(orderType);
             break;
         case "comments":
-            queryHandler.order("bean.comments " + orderType);
+            queryHandler.order("bean.comments ").append(orderType);
             break;
         case "clicks":
-            queryHandler.order("bean.clicks " + orderType);
+            queryHandler.order("bean.clicks ").append(orderType);
             break;
         case "publishDate":
-            queryHandler.order("bean.publishDate " + orderType);
+            queryHandler.order("bean.publishDate ").append(orderType);
             break;
         case "updateDate":
-            queryHandler.order("bean.updateDate " + orderType);
+            queryHandler.order("bean.updateDate ").append(orderType);
             break;
         case "checkDate":
-            queryHandler.order("bean.checkDate " + orderType);
+            queryHandler.order("bean.checkDate ").append(orderType);
             break;
-        case "default":
-            orderType = ORDERTYPE_DESC;
         default:
             if (ORDERTYPE_DESC.equals(orderType)) {
                 queryHandler.order("bean.sort desc");
             }
-            queryHandler.order("bean.publishDate " + orderType);
+            queryHandler.order("bean.publishDate ").append(orderType);
         }
         queryHandler.order("bean.id desc");
         return getPage(queryHandler, pageIndex, pageSize);
@@ -271,11 +308,12 @@ public class CmsContentDao extends BaseDao<CmsContent> {
 
     @Override
     protected CmsContent init(CmsContent entity) {
+        Date now = CommonUtils.getDate();
         if (null == entity.getCreateDate()) {
-            entity.setCreateDate(CommonUtils.getDate());
+            entity.setCreateDate(now);
         }
         if (null == entity.getPublishDate()) {
-            entity.setPublishDate(CommonUtils.getDate());
+            entity.setPublishDate(now);
         }
         if (CommonUtils.empty(entity.getTagIds())) {
             entity.setTagIds(null);

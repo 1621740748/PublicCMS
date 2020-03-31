@@ -44,6 +44,8 @@ public class AdminContextInterceptor extends WebContextInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+        SysSite site = siteComponent.getSite(request.getServerName());
+        request.setAttribute("site", site);
         String path = urlPathHelper.getLookupPathForRequest(request);
         String ctxPath = urlPathHelper.getOriginatingContextPath(request);
         if (adminContextPath.equals(path)) {
@@ -57,10 +59,10 @@ public class AdminContextInterceptor extends WebContextInterceptor {
             }
         } else if (verifyNeedLogin(path)) {
             HttpSession session = request.getSession();
-            SysSite site = siteComponent.getSite(request.getServerName());
             SysUser user = initUser(ControllerUtils.getAdminFromSession(session), LogLoginService.CHANNEL_WEB_MANAGER,
                     CommonConstants.getCookiesAdmin(), site, request, response);
             if (null == user) {
+                ControllerUtils.clearAdminToSession(request.getContextPath(), session, response);
                 try {
                     redirectLogin(ctxPath, path, request.getQueryString(), request.getHeader("X-Requested-With"), response);
                     return false;
@@ -71,6 +73,7 @@ public class AdminContextInterceptor extends WebContextInterceptor {
             SysUser entity = sysUserService.getEntity(user.getId());
             if (null == entity || entity.isDisabled() || !entity.isSuperuserAccess() || null == site || site.isDisabled()
                     || site.getId() != entity.getSiteId()) {
+                ControllerUtils.clearAdminToSession(request.getContextPath(), session, response);
                 try {
                     redirectLogin(ctxPath, path, request.getQueryString(), request.getHeader("X-Requested-With"), response);
                     return false;
@@ -80,7 +83,7 @@ public class AdminContextInterceptor extends WebContextInterceptor {
             } else if (verifyNeedAuthorized(path)) {
                 if (!CommonConstants.SEPARATOR.equals(path)) {
                     int index = path.lastIndexOf(CommonConstants.DOT);
-                    path = path.substring(path.indexOf(CommonConstants.SEPARATOR) > 0 ? 0 : 1,
+                    path = path.substring(0 < path.indexOf(CommonConstants.SEPARATOR) ? 0 : 1,
                             index > -1 ? index : path.length());
                     if (0 == roleAuthorizedService.count(entity.getRoles(), path) && !ownsAllRight(entity.getRoles())) {
                         try {
@@ -130,6 +133,9 @@ public class AdminContextInterceptor extends WebContextInterceptor {
         if (null == loginUrl) {
             return false;
         } else if (null != needNotLoginUrls && null != url) {
+            if (url.startsWith(loginUrl) || (null != loginJsonUrl && url.startsWith(loginJsonUrl))) {
+                return false;
+            }
             for (String needNotLoginUrl : needNotLoginUrls) {
                 if (null != needNotLoginUrl) {
                     if (url.startsWith(needNotLoginUrl)) {
@@ -145,6 +151,9 @@ public class AdminContextInterceptor extends WebContextInterceptor {
         if (null == unauthorizedUrl) {
             return false;
         } else if (null != needNotAuthorizedUrls && null != url) {
+            if (url.startsWith(unauthorizedUrl)) {
+                return false;
+            }
             for (String needNotAuthorizedUrl : needNotAuthorizedUrls) {
                 if (null != needNotAuthorizedUrl) {
                     if (url.startsWith(needNotAuthorizedUrl)) {

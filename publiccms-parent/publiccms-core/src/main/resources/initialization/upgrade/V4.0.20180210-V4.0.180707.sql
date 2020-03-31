@@ -1,6 +1,6 @@
 UPDATE `sys_module` SET `authorized_url` = 'sysUser/lookup,cmsContent/recycle,cmsContent/realDelete' WHERE  `id` = 117;
 ALTER TABLE `sys_user` MODIFY COLUMN `last_login_ip` varchar(64) NULL DEFAULT NULL COMMENT '最后登录ip' AFTER `last_login_date`;
-ALTER TABLE `sys_user_token` MODIFY COLUMN `login_ip` varchar(64) NOT NULL COMMENT '登陆IP' AFTER `create_date`;
+ALTER TABLE `sys_user_token` MODIFY COLUMN `login_ip` varchar(64) NOT NULL COMMENT '登录IP' AFTER `create_date`;
 -- 20180414 --
 DROP TABLE IF EXISTS `home_active`;
 DROP TABLE IF EXISTS `home_article`;
@@ -198,15 +198,15 @@ INSERT INTO `sys_module_lang` VALUES ('myself', 'en', 'Myself');
 INSERT INTO `sys_module_lang` VALUES ('myself_content', '', '我的内容');
 INSERT INTO `sys_module_lang` VALUES ('myself_content', 'en', 'My content');
 INSERT INTO `sys_module_lang` VALUES ('myself_content_add', '', '修改');
-INSERT INTO `sys_module_lang` VALUES ('myself_content_add', 'en', 'test');
+INSERT INTO `sys_module_lang` VALUES ('myself_content_add', 'en', 'Add');
 INSERT INTO `sys_module_lang` VALUES ('myself_content_delete', '', '删除');
-INSERT INTO `sys_module_lang` VALUES ('myself_content_delete', 'en', 'test');
+INSERT INTO `sys_module_lang` VALUES ('myself_content_delete', 'en', 'Delete');
 INSERT INTO `sys_module_lang` VALUES ('myself_content_publish', '', '生成');
-INSERT INTO `sys_module_lang` VALUES ('myself_content_publish', 'en', 'test');
+INSERT INTO `sys_module_lang` VALUES ('myself_content_publish', 'en', 'Publish');
 INSERT INTO `sys_module_lang` VALUES ('myself_content_push', '', '推荐');
-INSERT INTO `sys_module_lang` VALUES ('myself_content_push', 'en', 'test');
+INSERT INTO `sys_module_lang` VALUES ('myself_content_push', 'en', 'Push');
 INSERT INTO `sys_module_lang` VALUES ('myself_content_refresh', '', '刷新');
-INSERT INTO `sys_module_lang` VALUES ('myself_content_refresh', 'en', 'test');
+INSERT INTO `sys_module_lang` VALUES ('myself_content_refresh', 'en', 'Refresh');
 INSERT INTO `sys_module_lang` VALUES ('myself_log_login', '', '我的登录日志');
 INSERT INTO `sys_module_lang` VALUES ('myself_log_login', 'en', 'My login log');
 INSERT INTO `sys_module_lang` VALUES ('myself_log_operate', '', '我的操作日志');

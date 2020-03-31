@@ -9,6 +9,7 @@ import org.springframework.web.servlet.view.freemarker.FreeMarkerView;
 
 import com.publiccms.common.api.Config;
 import com.publiccms.common.tools.CommonUtils;
+import com.publiccms.common.tools.RequestUtils;
 import com.publiccms.common.view.MultiSiteImportDirective;
 import com.publiccms.common.view.MultiSiteIncludeDirective;
 import com.publiccms.entities.sys.SysSite;
@@ -20,7 +21,6 @@ import com.publiccms.logic.component.BeanComponent;
  *
  */
 public abstract class AbstractFreemarkerView extends FreeMarkerView {
-    protected static final String CONTEXT_ADMIN = "admin";
     protected static final String CONTEXT_USER = "user";
     /**
      * Domain Context
@@ -39,10 +39,6 @@ public abstract class AbstractFreemarkerView extends FreeMarkerView {
      */
     public static final String CONTEXT_BASE = "base";
     /**
-     * Base Context
-     */
-    public static final String CONTEXT_ADMNIN_BASE = "adminBase";
-    /**
      * Include Context
      */
     public static final String CONTEXT_INCLUDE = "include";
@@ -59,25 +55,24 @@ public abstract class AbstractFreemarkerView extends FreeMarkerView {
 
     /**
      * @param model
-     * @param scheme
-     * @param serverName
-     * @param serverPort
-     * @param contextPath
+     * @param request
      */
     public static void exposeAttribute(Map<String, Object> model, HttpServletRequest request) {
-        String scheme = request.getScheme();
-        int port = request.getServerPort();
         String serverName = request.getServerName();
-        if (80 == port && "http".equals(scheme) || 443 == port && "https".equals(scheme)) {
-            model.put(CONTEXT_BASE,
-                    new StringBuilder(scheme).append("://").append(serverName).append(request.getContextPath()).toString());
-        } else {
-            model.put(CONTEXT_BASE, new StringBuilder(scheme).append("://").append(serverName).append(":").append(port)
-                    .append(request.getContextPath()).toString());
-        }
-
+        model.put(CONTEXT_BASE, getBasePath(request.getScheme(), request.getServerPort(), serverName, request.getContextPath()));
         model.put(CONTEXT_DOMAIN, BeanComponent.getSiteComponent().getDomain(serverName));
         exposeSite(model, BeanComponent.getSiteComponent().getSite(serverName));
+    }
+
+    public static String getBasePath(String scheme, int port, String serverName, String contextPath) {
+        String basePath;
+        if (80 == port && "http".equals(scheme) || 443 == port && "https".equals(scheme)) {
+            basePath = new StringBuilder(scheme).append("://").append(serverName).append(contextPath).toString();
+        } else {
+            basePath = new StringBuilder(scheme).append("://").append(serverName).append(":").append(port).append(contextPath)
+                    .toString();
+        }
+        return basePath;
     }
 
     /**
@@ -99,9 +94,10 @@ public abstract class AbstractFreemarkerView extends FreeMarkerView {
             String[] values = request.getParameterValues(parameterName);
             if (CommonUtils.notEmpty(values)) {
                 if (1 < values.length) {
+                    RequestUtils.removeCRLF(values);
                     model.put(parameterName, values);
                 } else {
-                    model.put(parameterName, values[0]);
+                    model.put(parameterName, RequestUtils.removeCRLF(values[0]));
                 }
             }
         }

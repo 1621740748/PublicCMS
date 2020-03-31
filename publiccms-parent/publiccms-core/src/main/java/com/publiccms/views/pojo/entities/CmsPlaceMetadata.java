@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.publiccms.entities.sys.SysExtendField;
 
 /**
  *
@@ -22,10 +23,11 @@ public class CmsPlaceMetadata implements java.io.Serializable {
     private Long[] adminIds;
     private boolean allowContribute;
     private boolean allowAnonymous;
+    private List<String> acceptItemTypes;
     private List<String> fieldList;
     private List<String> requiredFieldList;
     private Map<String,String> fieldTextMap;
-    private List<ExtendField> extendList;
+    private List<SysExtendField> extendList;
 
     /**
      * @return
@@ -77,6 +79,20 @@ public class CmsPlaceMetadata implements java.io.Serializable {
     }
 
     /**
+     * @return the acceptItemTypes
+     */
+    public List<String> getAcceptItemTypes() {
+        return acceptItemTypes;
+    }
+
+    /**
+     * @param acceptItemTypes the acceptItemTypes to set
+     */
+    public void setAcceptItemTypes(List<String> acceptItemTypes) {
+        this.acceptItemTypes = acceptItemTypes;
+    }
+
+    /**
      * @param allowAnonymous
      */
     public void setAllowAnonymous(boolean allowAnonymous) {
@@ -86,14 +102,14 @@ public class CmsPlaceMetadata implements java.io.Serializable {
     /**
      * @return
      */
-    public List<ExtendField> getExtendList() {
+    public List<SysExtendField> getExtendList() {
         return extendList;
     }
 
     /**
      * @param extendList
      */
-    public void setExtendList(List<ExtendField> extendList) {
+    public void setExtendList(List<SysExtendField> extendList) {
         this.extendList = extendList;
     }
 

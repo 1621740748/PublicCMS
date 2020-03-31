@@ -22,16 +22,16 @@ import com.publiccms.common.handler.RenderHandler;
  */
 @Component
 public class ContentClickDirective extends AbstractAppDirective {
-    
+
     @Autowired
     private StatisticsComponent statisticsComponent;
 
     @Override
     public void execute(RenderHandler handler, SysApp app, SysUser user) throws IOException, Exception {
         Long id = handler.getLong("id");
-        CmsContentStatistics contentStatistics = statisticsComponent.clicks(id);
-        if (null != contentStatistics && null != contentStatistics.getEntity()) {
-            handler.put("clicks", contentStatistics.getEntity().getClicks() + contentStatistics.getClicks());
+        CmsContentStatistics contentStatistics = statisticsComponent.contentClicks(getSite(handler), id);
+        if (null != contentStatistics) {
+            handler.put("clicks", contentStatistics.getOldClicks() + contentStatistics.getClicks());
         }
     }
 
